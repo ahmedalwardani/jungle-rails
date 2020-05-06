@@ -28,6 +28,7 @@ class OrdersController < ApplicationController
     update_cart({})
   end
   def perform_stripe_charge
+    puts params.inspect
     Stripe::Charge.create(
       source: params[:stripeToken],
       amount: cart_subtotal_cents,
@@ -36,7 +37,12 @@ class OrdersController < ApplicationController
     )
   end
   def create_order(stripe_charge)
-    order = Order.new()
+    
+    order = Order.new(
+      email: params[:stripeEmail],
+      total_cents: cart_subtotal_cents,
+      stripe_charge_id: stripe_charge.id, # returned by stripe
+    )
     enhanced_cart.each do |entry|
       product = entry[:product]
       quantity = entry[:quantity]
@@ -46,7 +52,9 @@ class OrdersController < ApplicationController
         item_price: product.price,
         total_price: product.price * quantity
       )
+      puts order.inspect
     end
+    # puts order.inspect
     order.save!
     order
   end
